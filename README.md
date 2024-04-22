@@ -125,8 +125,18 @@ To submit your own implementation to 1BRC, follow these steps:
     * The execution time of the program on your system and specs of the same (CPU, number of cores, RAM). This is for informative purposes only, the official runtime will be determined as described below.
 * I will run the program and determine its performance as described in the next section, and enter the result to the scoreboard.
 
-The challenge runs until April 29, 2024.
+The challenge runs until April 29, 2024 (or can be extended based on the progress).
 
+## Evaluating Results
+
+Programs are run from  a RAM disk (i.o. the IO overhead for loading the file from disk is not relevant), using 8 cores of the machine.
+Each contender must pass the 1BRC test suite (_/test.sh_).
+The `hyperfine` program is used for measuring execution times of the launch scripts of all entries, i.e. end-to-end times are measured.
+Each contender is run five times in a row.
+The slowest and the fastest runs are discarded.
+The mean value of the remaining three runs is the result for that contender and will be added to the results table above.
+The exact same _measurements.txt_ file is used for evaluating all contenders.
+See the script _evaluate.sh_ for the exact implementation of the evaluation steps.
 
 ## FAQ
 
