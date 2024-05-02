@@ -15,7 +15,6 @@
  */
 package dev.morling.onebrc;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
@@ -34,15 +33,15 @@ public class CalculateAverage_arun_murugan {
         public static Aggregate defaultAggr = new Aggregate(Double.POSITIVE_INFINITY,
                                                          Double.NEGATIVE_INFINITY, 0L, 0D);
         public Aggregate withUpdated(Double val) {
-            return new Aggregate(Math.min(min, val), Math.max(max, val), count + 1, round(sum + val));
+            return new Aggregate(Math.min(min, val), Math.max(max, val), count + 1, sum + val);
         }
 
         public Aggregate merge(Aggregate other) {
-            return new Aggregate(Math.min(min, other.min), Math.max(max, other.max), count + other.count, round(sum + other.sum));
+            return new Aggregate(Math.min(min, other.min), Math.max(max, other.max), count + other.count, sum + other.sum);
         }
 
         public String toString() {
-            return round(min) + "/" + round(sum / count) + "/" + round(max);
+            return round(min) + "/" + round(round(sum) / count) + "/" + round(max);
         }
 
         private double round(double value) {
@@ -84,17 +83,17 @@ public class CalculateAverage_arun_murugan {
         private HashMap<Long, Aggregate> map = new HashMap<>();
         private Long offset;
         private Long maxOffset;
-        private HashMap<Long, String> nameMapping = new HashMap<>();
+        private final HashMap<Long, String> nameMapping;
 
         public HashMap<Long, Aggregate> getAggrMap() {
             return this.map;
         }
 
-        public HashMap<Long, String> getNameMapping() {
-            return this.nameMapping;
-        }
+        // public HashMap<Long, String> getNameMapping() {
+        // return this.nameMapping;
+        // }
 
-        Processor(RandomAccessFile file, long offset, long maxOffset) throws IOException {
+        Processor(RandomAccessFile file, long offset, long maxOffset, HashMap<Long, String> nameMapping) throws IOException {
             file.seek(offset);
             this.offset = offset;
             this.maxOffset = maxOffset;
@@ -102,6 +101,7 @@ public class CalculateAverage_arun_murugan {
             var buf = file.getChannel()
                     .map(FileChannel.MapMode.READ_ONLY, offset, maxCounter);
             this.mbbReader = new MappedByteBufferReader(buf, maxCounter);
+            this.nameMapping = nameMapping;
         }
 
         @Override
@@ -122,10 +122,15 @@ public class CalculateAverage_arun_murugan {
 
                     var aggr = map.get(key);
                     if (aggr == null) {
-                        mbbReader.setReadPosition(prev_position, mbbReader.getPosition() - prev_position);
-                        var keyStr = readKeyStr(mbbReader);
-                        nameMapping.put(key, keyStr);
                         aggr = Aggregate.defaultAggr;
+
+                        if (!nameMapping.containsKey(key)) {
+                            synchronized (this.nameMapping) {
+                                mbbReader.setReadPosition(prev_position, mbbReader.getPosition() - prev_position);
+                                var keyStr = readKeyStr(mbbReader);
+                                nameMapping.put(key, keyStr);
+                            }
+                        }
                     }
 
                     var val = readVal(mbbReader);
@@ -215,21 +220,18 @@ public class CalculateAverage_arun_murugan {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        long fileSize = 0L;
-        {
-            var file = new File(FILE);
-            fileSize = file.length();
-        }
+        RandomAccessFile file = new RandomAccessFile(FILE, "r");
+        long fileSize = file.length();
         var processors = new ArrayList<Processor>();
         int cores = Runtime.getRuntime().availableProcessors();
         int nThreads = Math.min((int) Math.ceil((double) fileSize / (100000 * 107)), cores);
 
         long partitionSize = (long) Math.ceil((double) fileSize / nThreads);
         long offset = 0, maxOffset = partitionSize;
-        RandomAccessFile file = new RandomAccessFile(FILE, "r");
+        HashMap<Long, String> nameMapping = new HashMap<>();
 
         for (int i = 0; i < nThreads; i++) {
-            Processor processor = new Processor(file, offset, maxOffset);
+            Processor processor = new Processor(file, offset, maxOffset, nameMapping);
             processors.add(processor);
             processor.start();
             offset = maxOffset;
@@ -238,10 +240,8 @@ public class CalculateAverage_arun_murugan {
 
         TreeMap<String, Aggregate> result = new TreeMap<>();
         for (int i = nThreads - 1; i >= 0; i--) {
-            Processor processor = processors.get(i);
+            Processor processor = processors.get(nThreads - i - 1);
             processor.join();
-
-            var nameMapping = processor.getNameMapping();
 
             processor.getAggrMap().forEach((key, value) -> {
                 result.merge(nameMapping.get(key), value, Aggregate::merge);
