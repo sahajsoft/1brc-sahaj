@@ -29,16 +29,58 @@ public class CalculateAverage_arun_murugan {
     private static final String FILE = "./measurements.txt";
     // private static final String FILE = "/Volumes/RAM Disk/measurements_1B.txt";
 
-    private static record Aggregate(double min, double max, Long count, Double sum) {
-        public static Aggregate defaultAggr = new Aggregate(Double.POSITIVE_INFINITY,
-                Double.NEGATIVE_INFINITY, 0L, 0D);
+    // private static record Aggregate(double min, double max, long count, double sum) {
+    // public static Aggregate defaultAggr = new Aggregate(Double.POSITIVE_INFINITY,
+    // Double.NEGATIVE_INFINITY, 0L, 0D);
+    //
+    // public Aggregate withUpdated(Double val) {
+    // return new Aggregate(Math.min(min, val), Math.max(max, val), count + 1, sum + val);
+    // }
+    //
+    // public Aggregate merge(Aggregate other) {
+    // return new Aggregate(Math.min(min, other.min), Math.max(max, other.max), count + other.count, sum + other.sum);
+    // }
+    //
+    // public String toString() {
+    // return round(min) + "/" + round(round(sum) / count) + "/" + round(max);
+    // }
+    //
+    // private double round(double value) {
+    // return Math.round(value * 10.0) / 10.0;
+    // }
+    // }
 
-        public Aggregate withUpdated(Double val) {
-            return new Aggregate(Math.min(min, val), Math.max(max, val), count + 1, sum + val);
+    public static class Aggregate {
+        private double min;
+        private double max;
+        private long count;
+        private double sum;
+
+        public static Aggregate getDefaultAggr() {
+            return new Aggregate(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, 0L, 0D);
+        }
+
+        public Aggregate(double min, double max, long count, double sum) {
+            this.min = min;
+            this.max = max;
+            this.count = count;
+            this.sum = sum;
+        }
+
+        public Aggregate withUpdated(float val) {
+            min = Math.min(min, val);
+            max = Math.max(max, val);
+            count++;
+            sum += val;
+            return this;
         }
 
         public Aggregate merge(Aggregate other) {
-            return new Aggregate(Math.min(min, other.min), Math.max(max, other.max), count + other.count, sum + other.sum);
+            min = Math.min(min, other.min);
+            max = Math.max(max, other.max);
+            count += other.count;
+            sum += other.sum;
+            return this;
         }
 
         public String toString() {
@@ -51,11 +93,11 @@ public class CalculateAverage_arun_murugan {
     }
 
     private static class MappedByteBufferReader {
-        private final Long maxReads;
-        private Long reads = 0L;
+        private final long maxReads;
+        private long reads = 0L;
         private final MappedByteBuffer buf;
 
-        public MappedByteBufferReader(MappedByteBuffer buf, Long maxReads) {
+        public MappedByteBufferReader(MappedByteBuffer buf, long maxReads) {
             this.buf = buf;
             this.maxReads = maxReads;
         }
@@ -79,11 +121,14 @@ public class CalculateAverage_arun_murugan {
         }
     }
 
+    private static class EOFException extends Exception {
+    }
+
     private static class Processor extends Thread {
         private final MappedByteBufferReader mbbReader;
         private HashMap<Long, Aggregate> map = new HashMap<>();
-        private Long offset;
-        private Long maxOffset;
+        private long offset;
+        private long maxOffset;
         private final HashMap<Long, String> nameMapping;
 
         public HashMap<Long, Aggregate> getAggrMap() {
@@ -118,12 +163,10 @@ public class CalculateAverage_arun_murugan {
 
                     int prev_position = mbbReader.getPosition();
                     var key = readKey(mbbReader);
-                    if (key == null)
-                        break;
 
                     var aggr = map.get(key);
                     if (aggr == null) {
-                        aggr = Aggregate.defaultAggr;
+                        aggr = Aggregate.getDefaultAggr();
 
                         if (!nameMapping.containsKey(key)) {
                             synchronized (this.nameMapping) {
@@ -137,13 +180,14 @@ public class CalculateAverage_arun_murugan {
                     }
 
                     var val = readVal(mbbReader);
-                    if (val == null)
-                        break;
 
                     map.put(key, aggr.withUpdated(val));
                 }
-            } catch (IOException ex) {
-                System.out.println(ex.getMessage());
+            }
+            catch (CalculateAverage_arun_murugan.EOFException ignored) {
+            }
+            catch (IOException ex) {
+                System.err.println(ex);
             }
         }
 
@@ -155,13 +199,13 @@ public class CalculateAverage_arun_murugan {
             }
         }
 
-        private Long readKey(MappedByteBufferReader reader) throws IOException {
+        private long readKey(MappedByteBufferReader reader) throws IOException, CalculateAverage_arun_murugan.EOFException {
             long hash = 0;
 
             while (true) {
                 var val = reader.read();
                 if (val == -1)
-                    return null;
+                    throw new CalculateAverage_arun_murugan.EOFException();
                 if (val == ';') {
                     return hash;
                 }
@@ -170,12 +214,12 @@ public class CalculateAverage_arun_murugan {
             }
         }
 
-        private String readKeyStr(MappedByteBufferReader reader) throws IOException {
+        private String readKeyStr(MappedByteBufferReader reader) throws IOException, CalculateAverage_arun_murugan.EOFException {
             ArrayList<Byte> arr = new ArrayList<>();
             while (true) {
                 var val = reader.read();
                 if (val == -1)
-                    return null;
+                    throw new CalculateAverage_arun_murugan.EOFException();
                 if (val == ';') {
                     var bytes = new byte[arr.size()];
                     for (int i = 0; i < arr.size(); i++) {
@@ -189,29 +233,32 @@ public class CalculateAverage_arun_murugan {
             }
         }
 
-        private Double readVal(MappedByteBufferReader reader) throws IOException {
-            double res = 0;
+        private float readVal(MappedByteBufferReader reader) throws IOException, CalculateAverage_arun_murugan.EOFException {
+            float res = 0;
             int sign = 1;
             var val = reader.read();
             if (val == -1)
-                return null;
+                throw new CalculateAverage_arun_murugan.EOFException();
 
             if (val == '-') {
                 sign = -1;
-            } else {
+            }
+            else {
                 res = val - '0';
             }
 
             while (true) {
                 val = reader.read();
                 if (val == -1)
-                    return null;
+                    throw new CalculateAverage_arun_murugan.EOFException();
+
                 if (val == '.') {
                     val = reader.read();
                     reader.read();
                     if (val == -1)
-                        return null;
-                    res = res + (double) (val - '0') / 10;
+                        throw new CalculateAverage_arun_murugan.EOFException();
+
+                    res = res + (float) (val - '0') / 10;
 
                     return sign * res;
                 }

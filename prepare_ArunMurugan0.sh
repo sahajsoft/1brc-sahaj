@@ -21,7 +21,7 @@
 #
 
 source "$HOME/.sdkman/bin/sdkman-init.sh"
-sdk use java 21.0.2-graal 1>&2
+sdk use java 22.0.1-graal 1>&2
 
 if [ ! -f target/CalculateAverage_arun_murugan_image ]; then
     NATIVE_IMAGE_OPTS="-O3 -H:TuneInlinerExploration=1 -march=native"
