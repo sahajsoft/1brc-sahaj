@@ -31,7 +31,8 @@ public class CalculateAverage_arun_murugan {
 
     private static record Aggregate(double min, double max, Long count, Double sum) {
         public static Aggregate defaultAggr = new Aggregate(Double.POSITIVE_INFINITY,
-                                                         Double.NEGATIVE_INFINITY, 0L, 0D);
+                Double.NEGATIVE_INFINITY, 0L, 0D);
+
         public Aggregate withUpdated(Double val) {
             return new Aggregate(Math.min(min, val), Math.max(max, val), count + 1, sum + val);
         }
@@ -126,9 +127,11 @@ public class CalculateAverage_arun_murugan {
 
                         if (!nameMapping.containsKey(key)) {
                             synchronized (this.nameMapping) {
-                                mbbReader.setReadPosition(prev_position, mbbReader.getPosition() - prev_position);
-                                var keyStr = readKeyStr(mbbReader);
-                                nameMapping.put(key, keyStr);
+                                if (!nameMapping.containsKey(key)) {
+                                    mbbReader.setReadPosition(prev_position, mbbReader.getPosition() - prev_position);
+                                    var keyStr = readKeyStr(mbbReader);
+                                    nameMapping.put(key, keyStr);
+                                }
                             }
                         }
                     }
@@ -139,8 +142,7 @@ public class CalculateAverage_arun_murugan {
 
                     map.put(key, aggr.withUpdated(val));
                 }
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 System.out.println(ex.getMessage());
             }
         }
@@ -196,8 +198,7 @@ public class CalculateAverage_arun_murugan {
 
             if (val == '-') {
                 sign = -1;
-            }
-            else {
+            } else {
                 res = val - '0';
             }
 
@@ -243,9 +244,8 @@ public class CalculateAverage_arun_murugan {
             Processor processor = processors.get(nThreads - i - 1);
             processor.join();
 
-            processor.getAggrMap().forEach((key, value) -> {
-                result.merge(nameMapping.get(key), value, Aggregate::merge);
-            });
+            processor.getAggrMap()
+                    .forEach((key, value) -> result.merge(nameMapping.get(key), value, Aggregate::merge));
         }
 
         System.out.println(result);
