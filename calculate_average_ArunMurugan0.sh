@@ -15,4 +15,5 @@
 #  limitations under the License.
 #
 
-target/CalculateAverage_arun_murugan_image
+# -XX:+PrintGC
+target/CalculateAverage_arun_murugan_image -Xms12g -Xmx12g
