@@ -23,7 +23,7 @@
 source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk use java 22.0.1-graal 1>&2
 
-if [ ! -f target/CalculateAverage_arun_murugan_image ]; then
+if [ ! -f target/CalculateAverage_ArunMurugan0_image ]; then
     NATIVE_IMAGE_OPTS="-O3 -H:TuneInlinerExploration=1 -march=native"
-    native-image $NATIVE_IMAGE_OPTS -cp target/average-1.0.0-SNAPSHOT.jar -o target/CalculateAverage_arun_murugan_image dev.morling.onebrc.CalculateAverage_arun_murugan
+    native-image $NATIVE_IMAGE_OPTS -cp target/average-1.0.0-SNAPSHOT.jar -o target/CalculateAverage_ArunMurugan0_image dev.morling.onebrc.CalculateAverage_ArunMurugan0
 fi

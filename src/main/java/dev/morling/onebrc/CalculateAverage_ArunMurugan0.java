@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TreeMap;
 
-public class CalculateAverage_arun_murugan {
+public class CalculateAverage_ArunMurugan0 {
 
     private static final String FILE = "./measurements.txt";
     // private static final String FILE = "/Volumes/RAM Disk/measurements_1B.txt";
@@ -184,7 +184,7 @@ public class CalculateAverage_arun_murugan {
                     map.put(key, aggr.withUpdated(val));
                 }
             }
-            catch (CalculateAverage_arun_murugan.EOFException ignored) {
+            catch (CalculateAverage_ArunMurugan0.EOFException ignored) {
             }
             catch (IOException ex) {
                 System.err.println(ex);
@@ -199,13 +199,13 @@ public class CalculateAverage_arun_murugan {
             }
         }
 
-        private long readKey(MappedByteBufferReader reader) throws IOException, CalculateAverage_arun_murugan.EOFException {
+        private long readKey(MappedByteBufferReader reader) throws IOException, CalculateAverage_ArunMurugan0.EOFException {
             long hash = 0;
 
             while (true) {
                 var val = reader.read();
                 if (val == -1)
-                    throw new CalculateAverage_arun_murugan.EOFException();
+                    throw new CalculateAverage_ArunMurugan0.EOFException();
                 if (val == ';') {
                     return hash;
                 }
@@ -214,12 +214,12 @@ public class CalculateAverage_arun_murugan {
             }
         }
 
-        private String readKeyStr(MappedByteBufferReader reader) throws IOException, CalculateAverage_arun_murugan.EOFException {
+        private String readKeyStr(MappedByteBufferReader reader) throws IOException, CalculateAverage_ArunMurugan0.EOFException {
             ArrayList<Byte> arr = new ArrayList<>();
             while (true) {
                 var val = reader.read();
                 if (val == -1)
-                    throw new CalculateAverage_arun_murugan.EOFException();
+                    throw new CalculateAverage_ArunMurugan0.EOFException();
                 if (val == ';') {
                     var bytes = new byte[arr.size()];
                     for (int i = 0; i < arr.size(); i++) {
@@ -233,12 +233,12 @@ public class CalculateAverage_arun_murugan {
             }
         }
 
-        private float readVal(MappedByteBufferReader reader) throws IOException, CalculateAverage_arun_murugan.EOFException {
+        private float readVal(MappedByteBufferReader reader) throws IOException, CalculateAverage_ArunMurugan0.EOFException {
             float res = 0;
             int sign = 1;
             var val = reader.read();
             if (val == -1)
-                throw new CalculateAverage_arun_murugan.EOFException();
+                throw new CalculateAverage_ArunMurugan0.EOFException();
 
             if (val == '-') {
                 sign = -1;
@@ -250,13 +250,13 @@ public class CalculateAverage_arun_murugan {
             while (true) {
                 val = reader.read();
                 if (val == -1)
-                    throw new CalculateAverage_arun_murugan.EOFException();
+                    throw new CalculateAverage_ArunMurugan0.EOFException();
 
                 if (val == '.') {
                     val = reader.read();
                     reader.read();
                     if (val == -1)
-                        throw new CalculateAverage_arun_murugan.EOFException();
+                        throw new CalculateAverage_ArunMurugan0.EOFException();
 
                     res = res + (float) (val - '0') / 10;
 

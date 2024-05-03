@@ -16,4 +16,4 @@
 #
 
 # -XX:+PrintGC
-target/CalculateAverage_arun_murugan_image
+target/CalculateAverage_ArunMurugan0_image
