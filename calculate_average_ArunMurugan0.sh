@@ -16,4 +16,4 @@
 #
 
 # -XX:+PrintGC
-target/CalculateAverage_arun_murugan_image -Xms12g -Xmx12g
+target/CalculateAverage_arun_murugan_image
